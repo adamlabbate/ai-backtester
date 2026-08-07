@@ -1,2 +1,4 @@
 pandas
 yfinance
+fastapi
+uvicorn[standard]

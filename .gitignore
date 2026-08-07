@@ -1,0 +1,28 @@
+# Planning docs (not part of the shipped repo)
+PROJECT_BRIEF.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Environment / secrets
+.env
+.env.local
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -15,6 +15,7 @@ class BacktestRequest(BaseModel):
     symbol: str = "AAPL"
     start: str = "2020-01-01"
     end: str = "2024-01-01"
+    interval: str = "1d"  # yfinance interval string: "1d", "1h", "1wk", etc.
     fast_period: int = 10
     slow_period: int = 30
     stop_pct: float = 0.02
@@ -23,10 +24,12 @@ class BacktestRequest(BaseModel):
 
 
 class BarOut(BaseModel):
-    """One OHLCV bar, shaped for lightweight-charts (which expects
-    {time, open, high, low, close} for candlesticks)."""
+    """One OHLCV bar. `time` is a Unix timestamp (seconds) rather than a
+    date string -- lightweight-charts needs real timestamps to place
+    intraday bars correctly; a "YYYY-MM-DD" string only has day resolution,
+    which would collide every bar on an hourly chart."""
 
-    time: str
+    time: int
     open: float
     high: float
     low: float
@@ -40,15 +43,15 @@ class TradeOut(BaseModel):
     exit_price: float
     stop: float
     target: float
-    entry_time: str
-    exit_time: str
+    entry_time: int
+    exit_time: int
     r_multiple: float
     pnl: float
     reason: str
 
 
 class EquityPoint(BaseModel):
-    time: str
+    time: int
     equity: float
 
 

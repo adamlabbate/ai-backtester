@@ -1,0 +1,147 @@
+:root {
+  color-scheme: dark;
+
+  /* --- Color ---
+     Near-black with a slight blue cast (not pure black) because candlesticks
+     read best on a dark canvas. Amber accent nods to old quote-terminal
+     phosphor displays -- used sparingly, for interactive/focus states and
+     the chart crosshair, not as a wash across the UI. */
+  --color-bg: #0b0e14;
+  --color-panel: #12151d;
+  --color-panel-raised: #171b26;
+  --color-border: #232838;
+  --color-border-strong: #2e3448;
+  --color-text: #e8eaf0;
+  --color-text-muted: #8890a4;
+  --color-text-faint: #565d72;
+  --color-accent: #e8a33d;
+  --color-accent-soft: rgba(232, 163, 61, 0.14);
+  --color-long: #3ecf8e;
+  --color-long-soft: rgba(62, 207, 142, 0.12);
+  --color-short: #f0556b;
+  --color-short-soft: rgba(240, 85, 107, 0.12);
+  --color-danger: #f0556b;
+
+  /* --- Type ---
+     Same superfamily (IBM Plex) used two ways: Mono for headings and every
+     number (prices, R-multiples, dates) so figures align in columns; Sans
+     for body copy and labels, where alignment doesn't matter but reading
+     ease does. */
+  --font-display: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+
+  /* --- Spacing scale --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* --- Radius --- small and consistent; this is an instrument, not a soft
+     consumer app, so corners stay tight. */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 240ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+/* Every interactive element gets a visible amber ring on keyboard focus --
+   the accent color's one non-decorative job. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,126 @@
+.wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  /* Wide content scrolls inside its own box rather than the page --
+     important on narrow viewports where this table won't fit. */
+  overflow-x: auto;
+}
+
+.empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+}
+
+.table {
+  min-width: 720px;
+}
+
+.table th {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-panel-raised);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.long {
+  color: var(--color-long);
+}
+
+.short {
+  color: var(--color-short);
+}
+
+.reason {
+  font-family: var(--font-body);
+  color: var(--color-text-muted);
+  white-space: normal;
+  min-width: 200px;
+}
+
+.rCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rBarTrack {
+  position: relative;
+  width: 88px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.rBarCenter {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border-strong);
+}
+
+.rBarPositive,
+.rBarNegative {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 2px;
+}
+
+.rBarPositive {
+  background: var(--color-long);
+}
+
+.rBarNegative {
+  background: var(--color-short);
+}
+
+.rTextPositive,
+.rTextNegative {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  width: 52px;
+  text-align: right;
+}
+
+.rTextPositive {
+  color: var(--color-long);
+}
+
+.rTextNegative {
+  color: var(--color-short);
+}

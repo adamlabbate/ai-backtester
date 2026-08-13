@@ -40,6 +40,8 @@ export interface Metrics {
 
 export interface BacktestResult {
   symbol: string;
+  strategy_template: string;
+  strategy_params: Record<string, number>;
   bars: Bar[];
   trades: Trade[];
   equity_curve: EquityPoint[];
@@ -51,9 +53,34 @@ export interface BacktestParams {
   start: string;
   end: string;
   interval: string;
-  fast_period: number;
-  slow_period: number;
-  stop_pct: number;
-  target_r: number;
   initial_equity: number;
+  strategy_template: string;
+  strategy_params: Record<string, number>;
+}
+
+// A single strategy's tunable parameter, as described by the backend's
+// template registry (backend/ai/templates.py) -- the frontend builds its
+// param inputs from this rather than hardcoding each template's shape.
+export interface TemplateParamInfo {
+  name: string;
+  type: "integer" | "number";
+  description: string;
+  default: number | null;
+}
+
+export interface TemplateInfo {
+  id: string;
+  label: string;
+  description: string;
+  params: TemplateParamInfo[];
+}
+
+// What Claude returned when asked to match a plain-English description to a
+// template -- `reasoning` is always present (see backend/ai/templates.py's
+// _REASONING_PROPERTY) so there's always something to show the user.
+export interface InterpretResult {
+  template: string;
+  label: string;
+  params: Record<string, number>;
+  reasoning: string;
 }

@@ -4,9 +4,9 @@ import math
 
 from fastapi import APIRouter, HTTPException
 
+from ...ai.templates import TEMPLATES
 from ...data.sources.yfinance_source import load_ohlcv
 from ...engine.backtest import run_backtest
-from ...engine.strategies.ma_crossover import MovingAverageCrossoverStrategy
 from ..schemas import BacktestRequest, BacktestResponse, BarOut, EquityPoint, MetricsOut, TradeOut
 
 # APIRouter groups related endpoints so main.py doesn't have to define every
@@ -18,15 +18,26 @@ router = APIRouter()
 
 @router.post("/backtest", response_model=BacktestResponse)
 def run_backtest_endpoint(request: BacktestRequest) -> BacktestResponse:
-    """Run the Phase 1 engine against real data and return everything the
-    frontend needs to render it: the OHLCV bars themselves (for the chart),
-    the trade list, the equity curve, and summary metrics.
+    """Run the engine against real data and return everything the frontend
+    needs to render it: the OHLCV bars themselves (for the chart), the trade
+    list, the equity curve, and summary metrics.
 
     `response_model=BacktestResponse` tells FastAPI to validate whatever
     this function returns against that schema and serialize it to JSON --
     if a field were missing or the wrong type, this would fail loudly here
     rather than silently shipping bad data to the frontend.
     """
+    template = TEMPLATES.get(request.strategy_template)
+    if template is None:
+        raise HTTPException(status_code=400, detail=f"Unknown strategy_template: {request.strategy_template!r}")
+
+    try:
+        strategy = template.build(request.strategy_params)
+    except TypeError as exc:
+        # e.g. an unexpected key in strategy_params, or a value of the wrong
+        # type reaching the strategy's __init__ despite the JSON schema.
+        raise HTTPException(status_code=400, detail=f"Invalid strategy_params: {exc}") from exc
+
     try:
         data = load_ohlcv(request.symbol, start=request.start, end=request.end, interval=request.interval)
     except ValueError as exc:
@@ -35,12 +46,6 @@ def run_backtest_endpoint(request: BacktestRequest) -> BacktestResponse:
         # 400 instead of an opaque 500.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    strategy = MovingAverageCrossoverStrategy(
-        fast_period=request.fast_period,
-        slow_period=request.slow_period,
-        stop_pct=request.stop_pct,
-        target_r=request.target_r,
-    )
     result = run_backtest(data, strategy, initial_equity=request.initial_equity)
 
     # Unix seconds, not a date string -- see BarOut's docstring in schemas.py.
@@ -94,6 +99,8 @@ def run_backtest_endpoint(request: BacktestRequest) -> BacktestResponse:
 
     return BacktestResponse(
         symbol=request.symbol,
+        strategy_template=request.strategy_template,
+        strategy_params=request.strategy_params,
         bars=bars,
         trades=trades,
         equity_curve=equity_curve,

@@ -1,26 +1,58 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class BacktestRequest(BaseModel):
     """The JSON body a client sends to POST /api/backtest.
 
     Pydantic validates this automatically -- if the client sends
-    fast_period as a string that can't parse to an int, FastAPI returns a
-    422 error with details before our code ever runs. Defaults here mean a
-    client can POST an empty body ({}) and still get the Phase 1 demo run.
+    strategy_params.fast_period as a string that can't parse to an int,
+    FastAPI returns a 422 error with details before our code ever runs.
+    Defaults here mean a client can POST an empty body ({}) and still get
+    the Phase 1 demo run (MA crossover with its own built-in defaults).
+
+    strategy_params is intentionally an open dict rather than a fixed set of
+    fields: which parameters are valid depends on strategy_template (see
+    ai/templates.py), and Phase 3 is exactly about letting Claude choose the
+    template *and* the params from a plain-English description, so this
+    endpoint can't know the shape in advance.
     """
 
     symbol: str = "AAPL"
     start: str = "2020-01-01"
     end: str = "2024-01-01"
     interval: str = "1d"  # yfinance interval string: "1d", "1h", "1wk", etc.
-    fast_period: int = 10
-    slow_period: int = 30
-    stop_pct: float = 0.02
-    target_r: float = 2.0
     initial_equity: float = 10_000.0
+    strategy_template: str = "ma_crossover"
+    strategy_params: dict[str, Any] = Field(default_factory=dict)
+
+
+class InterpretRequest(BaseModel):
+    description: str
+
+
+class InterpretResponse(BaseModel):
+    template: str
+    label: str
+    params: dict[str, Any]
+    reasoning: str
+
+
+class TemplateParamInfo(BaseModel):
+    name: str
+    type: str  # JSON schema type: "integer" or "number"
+    description: str
+    default: float | int | None
+
+
+class TemplateInfo(BaseModel):
+    id: str
+    label: str
+    description: str
+    params: list[TemplateParamInfo]
 
 
 class BarOut(BaseModel):
@@ -65,6 +97,8 @@ class MetricsOut(BaseModel):
 
 class BacktestResponse(BaseModel):
     symbol: str
+    strategy_template: str
+    strategy_params: dict[str, Any]
     bars: list[BarOut]
     trades: list[TradeOut]
     equity_curve: list[EquityPoint]

@@ -99,15 +99,20 @@ export function Chart({ bars, trades }: ChartProps) {
     );
 
     // Two markers per trade: an amber arrow where the strategy fired, and
-    // a colored dot at exit labeled with the R-multiple outcome -- the
-    // same number the trade list and equity curve are built from, so the
-    // chart can never tell a different story than the stats below it.
+    // a colored dot at exit (green = win, red = loss) -- positioned from
+    // the same entry/exit times the trade list and equity curve are built
+    // from, so the chart can never tell a different story than the stats
+    // below it.
     //
-    // Entry markers deliberately carry no text: with more than a handful
-    // of trades, a full reason string ("fast MA crossed above slow MA")
-    // repeated at every arrow overlaps into an unreadable smear. The full
-    // reason is one scroll away in the trade list below; the chart only
-    // needs to show *where*, not *why*.
+    // Neither marker carries text. A strategy that only trades a handful of
+    // times a year looks fine with R-multiple labels next to every dot, but
+    // one like breakout that fires 80+ times over the same window turns
+    // that into an unreadable smear the moment two signals land near each
+    // other in time -- and there's no trade count where we can guarantee
+    // that won't happen. Color and shape carry the win/loss signal; the
+    // exact number and the reason it fired are one scroll away in the trade
+    // list below, which is a more honest place for detail this dense than
+    // static on-chart text.
     const tradeMarkers: SeriesMarker<Time>[] = trades.flatMap((trade) => {
       const isLong = trade.direction === "long";
       const won = trade.r_multiple > 0;
@@ -123,7 +128,6 @@ export function Chart({ bars, trades }: ChartProps) {
           position: isLong ? "aboveBar" : "belowBar",
           shape: "circle",
           color: won ? "#3ecf8e" : "#f0556b",
-          text: `${trade.r_multiple >= 0 ? "+" : ""}${trade.r_multiple.toFixed(1)}R`,
         },
       ];
     });

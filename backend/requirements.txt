@@ -2,3 +2,5 @@ pandas
 yfinance
 fastapi
 uvicorn[standard]
+anthropic
+python-dotenv

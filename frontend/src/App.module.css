@@ -47,6 +47,16 @@
   animation: reveal var(--duration-base) var(--ease-out);
 }
 
+.resultsMeta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.resultsMetaParams {
+  color: var(--color-text-faint);
+}
+
 .lowerGrid {
   display: grid;
   grid-template-columns: 1.6fr 1fr;

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ControlBar } from "./components/ControlBar";
 import type { RunParams } from "./components/ControlBar";
+import { StrategyPanel } from "./components/StrategyPanel";
+import type { StrategyState } from "./components/StrategyPanel";
 import { Chart } from "./components/Chart";
 import { EquityCurve } from "./components/EquityCurve";
 import { MetricsPanel } from "./components/MetricsPanel";
@@ -11,10 +13,17 @@ import styles from "./App.module.css";
 
 const INITIAL_EQUITY = 10_000;
 
+// Empty params means "use that template's own Python-side defaults" (see
+// backend/ai/templates.py's build functions) -- this is what lets a fresh
+// page load run a backtest before any AI interpretation has happened.
+const DEFAULT_STRATEGY: StrategyState = { template: "ma_crossover", params: {} };
+
 function App() {
-  // Three pieces of state cover every screen this app can be in: nothing
-  // run yet (all null/false), running (loading true), succeeded (result
-  // set), or failed (error set). The JSX below just reads these flags.
+  // Four pieces of state cover every screen this app can be in: nothing run
+  // yet (all null/false), running (loading true), succeeded (result set),
+  // or failed (error set). `strategy` is separate -- it's the AI/manual
+  // strategy picker's current selection, live even before a run happens.
+  const [strategy, setStrategy] = useState<StrategyState>(DEFAULT_STRATEGY);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +34,8 @@ function App() {
     try {
       const data = await runBacktest({
         ...params,
-        fast_period: 10,
-        slow_period: 30,
-        stop_pct: 0.02,
-        target_r: 2.0,
+        strategy_template: strategy.template,
+        strategy_params: strategy.params,
         initial_equity: INITIAL_EQUITY,
       });
       setResult(data);
@@ -51,6 +58,8 @@ function App() {
         <p className={styles.tagline}>event-driven strategy backtesting — no lookahead, by construction</p>
       </header>
 
+      <StrategyPanel strategy={strategy} onStrategyChange={setStrategy} />
+
       <ControlBar onRun={handleRun} loading={loading} />
 
       {error && (
@@ -61,6 +70,17 @@ function App() {
 
       {result && (
         <div className={styles.results}>
+          <p className={styles.resultsMeta}>
+            {result.symbol} · {result.strategy_template}
+            {Object.entries(result.strategy_params).length > 0 && (
+              <span className={styles.resultsMetaParams}>
+                {" "}
+                ({Object.entries(result.strategy_params)
+                  .map(([key, value]) => `${key}=${value}`)
+                  .join(", ")})
+              </span>
+            )}
+          </p>
           <Chart bars={result.bars} trades={result.trades} />
           <div className={styles.lowerGrid}>
             <EquityCurve points={result.equity_curve} initialEquity={INITIAL_EQUITY} />

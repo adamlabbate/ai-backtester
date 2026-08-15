@@ -10,16 +10,14 @@
 
 .chatRow {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .chatField {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  flex: 1;
-  min-width: 0;
 }
 
 .eyebrow {
@@ -40,7 +38,7 @@
   font-size: 13px;
   color: var(--color-text);
   resize: vertical;
-  min-height: 40px;
+  min-height: 56px;
 }
 
 .textarea:focus {
@@ -52,7 +50,7 @@
 }
 
 /* Deliberately an outline, not a solid fill -- "Interpret" is a secondary
-   action next to ControlBar's solid-amber "Run backtest", so the accent
+   action next to this panel's solid-amber "Run backtest", so the accent
    color's one filled use stays reserved for the thing that actually costs
    an API call to yfinance / actually runs the engine. */
 .interpretButton {
@@ -67,6 +65,7 @@
   font-size: 13px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  width: 100%;
   transition:
     background var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
@@ -109,10 +108,9 @@
 }
 
 .manualRow {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: var(--space-4);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
 }
 
 .field {
@@ -129,7 +127,8 @@
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--color-text);
-  min-width: 180px;
+  width: 100%;
+  grid-column: 1 / -1;
 }
 
 .select:focus {
@@ -144,9 +143,33 @@
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--color-text);
-  width: 88px;
+  width: 100%;
 }
 
 .paramInput:focus {
   border-color: var(--color-accent);
+}
+
+.runButton {
+  padding: var(--space-2) var(--space-5);
+  height: 34px;
+  background: var(--color-accent);
+  color: #16110a;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  width: 100%;
+  transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.runButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.runButton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

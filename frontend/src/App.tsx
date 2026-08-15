@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ControlBar } from "./components/ControlBar";
-import type { RunParams } from "./components/ControlBar";
 import { StrategyPanel } from "./components/StrategyPanel";
 import type { StrategyState } from "./components/StrategyPanel";
 import { CodegenPanel } from "./components/CodegenPanel";
@@ -10,6 +9,8 @@ import { MetricsPanel } from "./components/MetricsPanel";
 import { TradeList } from "./components/TradeList";
 import { runBacktest, generateStrategy } from "./api";
 import type { RunResult } from "./types";
+import { MAX_LOOKBACK_DAYS } from "./constants";
+import { addDaysISO, todayISO } from "./dateUtils";
 import styles from "./App.module.css";
 
 const INITIAL_EQUITY = 10_000;
@@ -20,11 +21,15 @@ const INITIAL_EQUITY = 10_000;
 const DEFAULT_STRATEGY: StrategyState = { template: "ma_crossover", params: {} };
 
 function App() {
-  // `strategy` and `codegenDescription` are the two "what to run" inputs --
-  // live even before either run button is pressed. `result` is unified
-  // across both flows (see RunResult in types.ts): whichever one last
-  // succeeded is what's on screen, tagged with `source` so the results
-  // section knows which meta line to show.
+  // Data-selection state -- symbol, date range, timeframe -- lives here,
+  // not in ControlBar: both StrategyPanel's "Run backtest" and
+  // CodegenPanel's "Generate custom strategy" need the current values when
+  // their own buttons fire, so it has to be a shared ancestor's state.
+  const [symbol, setSymbol] = useState("AAPL");
+  const [start, setStart] = useState("2020-01-01");
+  const [end, setEnd] = useState(() => todayISO());
+  const [timeframe, setTimeframe] = useState("1d");
+
   const [strategy, setStrategy] = useState<StrategyState>(DEFAULT_STRATEGY);
   const [codegenDescription, setCodegenDescription] = useState("");
   const [result, setResult] = useState<RunResult | null>(null);
@@ -32,12 +37,31 @@ function App() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleRun(params: RunParams) {
+  // Switching to a tighter interval while the date range still spans years
+  // is exactly what used to silently fail (Yahoo just returns nothing for
+  // an out-of-range request) -- pulling `start` back in to fit closes that
+  // failure mode instead of just describing it after the fact. (DatePicker
+  // also structurally prevents *new* out-of-range picks going forward --
+  // this handles a range that was already selected before the switch.)
+  function handleTimeframeChange(newTimeframe: string) {
+    setTimeframe(newTimeframe);
+    const maxDays = MAX_LOOKBACK_DAYS[newTimeframe];
+    if (maxDays === undefined) return;
+    const earliestAllowed = addDaysISO(end, -maxDays);
+    if (start < earliestAllowed) {
+      setStart(earliestAllowed);
+    }
+  }
+
+  async function handleRun() {
     setLoading(true);
     setError(null);
     try {
       const data = await runBacktest({
-        ...params,
+        symbol: symbol.trim().toUpperCase(),
+        start,
+        end,
+        interval: timeframe,
         strategy_template: strategy.template,
         strategy_params: strategy.params,
         initial_equity: INITIAL_EQUITY,
@@ -58,7 +82,7 @@ function App() {
     }
   }
 
-  async function handleGenerateCustom(params: RunParams) {
+  async function handleGenerateCustom() {
     if (!codegenDescription.trim()) {
       setError("Describe a strategy in the custom strategy box before generating.");
       return;
@@ -67,7 +91,10 @@ function App() {
     setError(null);
     try {
       const data = await generateStrategy({
-        ...params,
+        symbol: symbol.trim().toUpperCase(),
+        start,
+        end,
+        interval: timeframe,
         description: codegenDescription,
         initial_equity: INITIAL_EQUITY,
       });
@@ -98,68 +125,80 @@ function App() {
         <p className={styles.tagline}>event-driven strategy backtesting — no lookahead, by construction</p>
       </header>
 
-      <StrategyPanel strategy={strategy} onStrategyChange={setStrategy} />
+      <div className={styles.layout}>
+        <div className={styles.main}>
+          {error && (
+            <div className={styles.error} role="alert">
+              {error}
+            </div>
+          )}
 
-      <CodegenPanel description={codegenDescription} onDescriptionChange={setCodegenDescription} />
-
-      <ControlBar
-        onRun={handleRun}
-        loading={loading}
-        onGenerateCustom={handleGenerateCustom}
-        generating={generating}
-      />
-
-      {error && (
-        <div className={styles.error} role="alert">
-          {error}
-        </div>
-      )}
-
-      {result && (
-        <div className={styles.results}>
-          <div className={styles.resultsMeta}>
-            {result.source.kind === "template" ? (
-              <p className={styles.resultsMetaLine}>
-                {result.symbol} · {result.source.template}
-                {Object.entries(result.source.params).length > 0 && (
-                  <span className={styles.resultsMetaParams}>
-                    {" "}
-                    ({Object.entries(result.source.params)
-                      .map(([key, value]) => `${key}=${value}`)
-                      .join(", ")})
-                  </span>
+          {result ? (
+            <div className={styles.results}>
+              <div className={styles.resultsMeta}>
+                {result.source.kind === "template" ? (
+                  <p className={styles.resultsMetaLine}>
+                    {result.symbol} · {result.source.template}
+                    {Object.entries(result.source.params).length > 0 && (
+                      <span className={styles.resultsMetaParams}>
+                        {" "}
+                        ({Object.entries(result.source.params)
+                          .map(([key, value]) => `${key}=${value}`)
+                          .join(", ")})
+                      </span>
+                    )}
+                  </p>
+                ) : (
+                  <>
+                    <p className={styles.resultsMetaLine}>
+                      {result.symbol} · custom strategy
+                      <span className={styles.resultsMetaParams}>
+                        {" "}
+                        (generated on attempt {result.source.attempts} of 3)
+                      </span>
+                    </p>
+                    <details className={styles.codeDisclosure}>
+                      <summary>View generated code</summary>
+                      <pre className={styles.code}>{result.source.code}</pre>
+                    </details>
+                  </>
                 )}
-              </p>
-            ) : (
-              <>
-                <p className={styles.resultsMetaLine}>
-                  {result.symbol} · custom strategy
-                  <span className={styles.resultsMetaParams}>
-                    {" "}
-                    (generated on attempt {result.source.attempts} of 3)
-                  </span>
-                </p>
-                <details className={styles.codeDisclosure}>
-                  <summary>View generated code</summary>
-                  <pre className={styles.code}>{result.source.code}</pre>
-                </details>
-              </>
-            )}
-          </div>
-          <Chart bars={result.bars} trades={result.trades} />
-          <div className={styles.lowerGrid}>
-            <EquityCurve points={result.equity_curve} initialEquity={INITIAL_EQUITY} />
-            <MetricsPanel metrics={result.metrics} finalEquity={finalEquity} />
-          </div>
-          <TradeList trades={result.trades} />
+              </div>
+              <Chart bars={result.bars} trades={result.trades} />
+              <div className={styles.lowerGrid}>
+                <EquityCurve points={result.equity_curve} initialEquity={INITIAL_EQUITY} />
+                <MetricsPanel metrics={result.metrics} finalEquity={finalEquity} />
+              </div>
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <p>Set a symbol and date range, then run a backtest.</p>
+            </div>
+          )}
         </div>
-      )}
 
-      {!result && !loading && !generating && !error && (
-        <div className={styles.empty}>
-          <p>Set a symbol and date range, then run a backtest.</p>
-        </div>
-      )}
+        <aside className={styles.sidebar}>
+          <ControlBar
+            symbol={symbol}
+            onSymbolChange={setSymbol}
+            start={start}
+            onStartChange={setStart}
+            end={end}
+            onEndChange={setEnd}
+            interval={timeframe}
+            onIntervalChange={handleTimeframeChange}
+          />
+          <StrategyPanel strategy={strategy} onStrategyChange={setStrategy} onRun={handleRun} loading={loading} />
+          <CodegenPanel
+            description={codegenDescription}
+            onDescriptionChange={setCodegenDescription}
+            onGenerateCustom={handleGenerateCustom}
+            generating={generating}
+          />
+        </aside>
+      </div>
+
+      {result && <TradeList trades={result.trades} />}
     </div>
   );
 }

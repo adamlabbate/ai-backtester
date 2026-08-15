@@ -9,15 +9,22 @@ import yfinance as yf
 # while logging an error to stderr). Checking this ourselves first turns
 # that into a clear, specific error instead of a generic "no data returned."
 # Intervals not listed here (1d, 1wk, 1mo, ...) have no such limit.
+#
+# These are the actual safe values, not the numbers Yahoo's error messages
+# quote -- boundary-tested directly (e.g. "1h data ... must be within the
+# last 730 days" actually rejects a 730-day span; 729 is the real limit).
+# The off-by-one isn't consistent across interval groups either: 1m's
+# quoted 8-day limit *is* inclusive (8 works), it's specifically the 60-
+# and 730-day groups that are exclusive. Adjusted down where verified.
 MAX_LOOKBACK_DAYS: dict[str, int] = {
     "1m": 8,
-    "2m": 60,
-    "5m": 60,
-    "15m": 60,
-    "30m": 60,
-    "90m": 60,
-    "1h": 730,
-    "4h": 730,
+    "2m": 59,
+    "5m": 59,
+    "15m": 59,
+    "30m": 59,
+    "90m": 59,
+    "1h": 729,
+    "4h": 729,
 }
 
 

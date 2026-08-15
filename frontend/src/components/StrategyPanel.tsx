@@ -12,6 +12,8 @@ export interface StrategyState {
 interface StrategyPanelProps {
   strategy: StrategyState;
   onStrategyChange: (strategy: StrategyState) => void;
+  onRun: () => void;
+  loading: boolean;
 }
 
 function defaultParams(template: TemplateInfo): Record<string, number> {
@@ -22,7 +24,7 @@ function defaultParams(template: TemplateInfo): Record<string, number> {
   return params;
 }
 
-export function StrategyPanel({ strategy, onStrategyChange }: StrategyPanelProps) {
+export function StrategyPanel({ strategy, onStrategyChange, onRun, loading }: StrategyPanelProps) {
   // Templates load once from the backend's registry (see
   // backend/ai/templates.py via GET /api/templates) so this component never
   // hardcodes a template's shape -- add a template on the backend and it
@@ -137,6 +139,10 @@ export function StrategyPanel({ strategy, onStrategyChange }: StrategyPanelProps
           </label>
         ))}
       </div>
+
+      <button className={styles.runButton} type="button" onClick={onRun} disabled={loading}>
+        {loading ? "Running…" : "Run backtest"}
+      </button>
     </section>
   );
 }

@@ -44,3 +44,33 @@
 .textarea::placeholder {
   color: var(--color-text-faint);
 }
+
+/* Outline, not filled -- matches StrategyPanel's "Interpret strategy".
+   Generating custom code is several Claude calls plus up to a few fresh
+   Docker containers, squarely in the "calls Claude, takes a while" half of
+   this app's solid-vs-outline visual language. */
+.generateButton {
+  height: 34px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  width: 100%;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.generateButton:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
+.generateButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

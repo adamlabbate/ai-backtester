@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ...ai.codegen import CodegenFailure, generate_and_run_strategy
 from ...data.sources.yfinance_source import load_ohlcv
 from ..schemas import BarOut, GenerateStrategyRequest, GenerateStrategyResponse
+from ..timeutil import to_unix_seconds
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ def generate_strategy_endpoint(request: GenerateStrategyRequest) -> GenerateStra
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    times = data.index.astype("datetime64[s]").astype("int64").tolist()
+    times = to_unix_seconds(data.index)
     bars = [
         {
             "time": times[i],

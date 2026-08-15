@@ -8,6 +8,7 @@ from ...ai.templates import TEMPLATES
 from ...data.sources.yfinance_source import load_ohlcv
 from ...engine.backtest import run_backtest
 from ..schemas import BacktestRequest, BacktestResponse, BarOut, EquityPoint, MetricsOut, TradeOut
+from ..timeutil import to_unix_seconds
 
 # APIRouter groups related endpoints so main.py doesn't have to define every
 # route directly -- this file's routes get mounted onto the app under a
@@ -49,12 +50,7 @@ def run_backtest_endpoint(request: BacktestRequest) -> BacktestResponse:
     result = run_backtest(data, strategy, initial_equity=request.initial_equity)
 
     # Unix seconds, not a date string -- see BarOut's docstring in schemas.py.
-    # Normalize to second resolution *before* casting to int64: pandas'
-    # datetime64 storage resolution isn't guaranteed to be nanoseconds (it
-    # varies by pandas version and what yfinance handed back), so casting
-    # straight to int64 would sometimes yield nanoseconds and sometimes
-    # already-seconds, silently producing wrong timestamps.
-    times = data.index.astype("datetime64[s]").astype("int64").tolist()
+    times = to_unix_seconds(data.index)
 
     bars = [
         BarOut(

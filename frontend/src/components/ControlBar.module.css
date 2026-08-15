@@ -74,6 +74,38 @@
   cursor: default;
 }
 
+/* Outline, not filled -- matches StrategyPanel's "Interpret strategy"
+   button. That's the visual rule across this app: solid amber means fast,
+   deterministic, local computation; outline amber means "this calls Claude
+   and its timing isn't fully predictable." Generating custom code is
+   several Claude calls plus up to a few fresh Docker containers, so it
+   belongs with Interpret, not with Run. */
+.generate {
+  padding: var(--space-2) var(--space-5);
+  height: 34px;
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.generate:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
+.generate:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .hint {
   flex-basis: 100%;
   font-size: 12px;

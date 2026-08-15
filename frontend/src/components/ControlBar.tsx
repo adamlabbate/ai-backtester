@@ -12,6 +12,8 @@ export interface RunParams {
 interface ControlBarProps {
   onRun: (params: RunParams) => void;
   loading: boolean;
+  onGenerateCustom: (params: RunParams) => void;
+  generating: boolean;
 }
 
 const TIMEFRAMES = [
@@ -20,7 +22,7 @@ const TIMEFRAMES = [
   { value: "1wk", label: "Weekly" },
 ];
 
-export function ControlBar({ onRun, loading }: ControlBarProps) {
+export function ControlBar({ onRun, loading, onGenerateCustom, generating }: ControlBarProps) {
   // useState gives each of these a piece of state plus a setter function;
   // React re-renders this component whenever a setter is called, which is
   // how the input boxes below stay in sync with what's typed into them
@@ -31,9 +33,17 @@ export function ControlBar({ onRun, loading }: ControlBarProps) {
   const [end, setEnd] = useState("2024-01-01");
   const [timeframe, setTimeframe] = useState("1d");
 
+  function currentParams(): RunParams {
+    return { symbol: symbol.trim().toUpperCase(), start, end, interval: timeframe };
+  }
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    onRun({ symbol: symbol.trim().toUpperCase(), start, end, interval: timeframe });
+    onRun(currentParams());
+  }
+
+  function handleGenerateClick() {
+    onGenerateCustom(currentParams());
   }
 
   const isIntraday = timeframe !== "1d" && timeframe !== "1wk";
@@ -77,8 +87,17 @@ export function ControlBar({ onRun, loading }: ControlBarProps) {
         <input className={styles.input} type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
       </label>
 
-      <button className={styles.run} type="submit" disabled={loading}>
+      <button className={styles.run} type="submit" disabled={loading || generating}>
         {loading ? "Running…" : "Run backtest"}
+      </button>
+
+      <button
+        className={styles.generate}
+        type="button"
+        disabled={loading || generating}
+        onClick={handleGenerateClick}
+      >
+        {generating ? "Generating…" : "Generate custom strategy"}
       </button>
 
       {isIntraday && (

@@ -103,3 +103,27 @@ class BacktestResponse(BaseModel):
     trades: list[TradeOut]
     equity_curve: list[EquityPoint]
     metrics: MetricsOut
+
+
+class GenerateStrategyRequest(BaseModel):
+    """The JSON body for POST /api/generate-strategy -- same
+    symbol/date/interval shape as a normal backtest, plus the plain-English
+    description Claude writes code from. There's no strategy_template here:
+    Phase 4 doesn't pick from a fixed set, it writes something new."""
+
+    description: str
+    symbol: str = "AAPL"
+    start: str = "2020-01-01"
+    end: str = "2024-01-01"
+    interval: str = "1d"
+    initial_equity: float = 10_000.0
+
+
+class GenerateStrategyResponse(BaseModel):
+    symbol: str
+    code: str
+    attempts: int
+    bars: list[BarOut]
+    trades: list[TradeOut]
+    equity_curve: list[EquityPoint]
+    metrics: MetricsOut

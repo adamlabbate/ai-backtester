@@ -3,12 +3,13 @@ import { ControlBar } from "./components/ControlBar";
 import type { RunParams } from "./components/ControlBar";
 import { StrategyPanel } from "./components/StrategyPanel";
 import type { StrategyState } from "./components/StrategyPanel";
+import { CodegenPanel } from "./components/CodegenPanel";
 import { Chart } from "./components/Chart";
 import { EquityCurve } from "./components/EquityCurve";
 import { MetricsPanel } from "./components/MetricsPanel";
 import { TradeList } from "./components/TradeList";
-import { runBacktest } from "./api";
-import type { BacktestResult } from "./types";
+import { runBacktest, generateStrategy } from "./api";
+import type { RunResult } from "./types";
 import styles from "./App.module.css";
 
 const INITIAL_EQUITY = 10_000;
@@ -19,13 +20,16 @@ const INITIAL_EQUITY = 10_000;
 const DEFAULT_STRATEGY: StrategyState = { template: "ma_crossover", params: {} };
 
 function App() {
-  // Four pieces of state cover every screen this app can be in: nothing run
-  // yet (all null/false), running (loading true), succeeded (result set),
-  // or failed (error set). `strategy` is separate -- it's the AI/manual
-  // strategy picker's current selection, live even before a run happens.
+  // `strategy` and `codegenDescription` are the two "what to run" inputs --
+  // live even before either run button is pressed. `result` is unified
+  // across both flows (see RunResult in types.ts): whichever one last
+  // succeeded is what's on screen, tagged with `source` so the results
+  // section knows which meta line to show.
   const [strategy, setStrategy] = useState<StrategyState>(DEFAULT_STRATEGY);
-  const [result, setResult] = useState<BacktestResult | null>(null);
+  const [codegenDescription, setCodegenDescription] = useState("");
+  const [result, setResult] = useState<RunResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRun(params: RunParams) {
@@ -38,12 +42,48 @@ function App() {
         strategy_params: strategy.params,
         initial_equity: INITIAL_EQUITY,
       });
-      setResult(data);
+      setResult({
+        symbol: data.symbol,
+        bars: data.bars,
+        trades: data.trades,
+        equity_curve: data.equity_curve,
+        metrics: data.metrics,
+        source: { kind: "template", template: data.strategy_template, params: data.strategy_params },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong running the backtest.");
       setResult(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGenerateCustom(params: RunParams) {
+    if (!codegenDescription.trim()) {
+      setError("Describe a strategy in the custom strategy box before generating.");
+      return;
+    }
+    setGenerating(true);
+    setError(null);
+    try {
+      const data = await generateStrategy({
+        ...params,
+        description: codegenDescription,
+        initial_equity: INITIAL_EQUITY,
+      });
+      setResult({
+        symbol: data.symbol,
+        bars: data.bars,
+        trades: data.trades,
+        equity_curve: data.equity_curve,
+        metrics: data.metrics,
+        source: { kind: "codegen", code: data.code, attempts: data.attempts },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong generating that strategy.");
+      setResult(null);
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -60,7 +100,14 @@ function App() {
 
       <StrategyPanel strategy={strategy} onStrategyChange={setStrategy} />
 
-      <ControlBar onRun={handleRun} loading={loading} />
+      <CodegenPanel description={codegenDescription} onDescriptionChange={setCodegenDescription} />
+
+      <ControlBar
+        onRun={handleRun}
+        loading={loading}
+        onGenerateCustom={handleGenerateCustom}
+        generating={generating}
+      />
 
       {error && (
         <div className={styles.error} role="alert">
@@ -70,17 +117,35 @@ function App() {
 
       {result && (
         <div className={styles.results}>
-          <p className={styles.resultsMeta}>
-            {result.symbol} · {result.strategy_template}
-            {Object.entries(result.strategy_params).length > 0 && (
-              <span className={styles.resultsMetaParams}>
-                {" "}
-                ({Object.entries(result.strategy_params)
-                  .map(([key, value]) => `${key}=${value}`)
-                  .join(", ")})
-              </span>
+          <div className={styles.resultsMeta}>
+            {result.source.kind === "template" ? (
+              <p className={styles.resultsMetaLine}>
+                {result.symbol} · {result.source.template}
+                {Object.entries(result.source.params).length > 0 && (
+                  <span className={styles.resultsMetaParams}>
+                    {" "}
+                    ({Object.entries(result.source.params)
+                      .map(([key, value]) => `${key}=${value}`)
+                      .join(", ")})
+                  </span>
+                )}
+              </p>
+            ) : (
+              <>
+                <p className={styles.resultsMetaLine}>
+                  {result.symbol} · custom strategy
+                  <span className={styles.resultsMetaParams}>
+                    {" "}
+                    (generated on attempt {result.source.attempts} of 3)
+                  </span>
+                </p>
+                <details className={styles.codeDisclosure}>
+                  <summary>View generated code</summary>
+                  <pre className={styles.code}>{result.source.code}</pre>
+                </details>
+              </>
             )}
-          </p>
+          </div>
           <Chart bars={result.bars} trades={result.trades} />
           <div className={styles.lowerGrid}>
             <EquityCurve points={result.equity_curve} initialEquity={INITIAL_EQUITY} />
@@ -90,7 +155,7 @@ function App() {
         </div>
       )}
 
-      {!result && !loading && !error && (
+      {!result && !loading && !generating && !error && (
         <div className={styles.empty}>
           <p>Set a symbol and date range, then run a backtest.</p>
         </div>

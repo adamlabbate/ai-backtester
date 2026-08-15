@@ -17,14 +17,31 @@ class BacktestResult:
     metrics: Metrics
 
 
-def run_backtest(data: pd.DataFrame, strategy: Strategy, initial_equity: float = 10_000.0) -> BacktestResult:
+def run_backtest(
+    data: pd.DataFrame,
+    strategy: Strategy,
+    initial_equity: float = 10_000.0,
+    truncate_visible_data: bool = False,
+) -> BacktestResult:
     """Iterate the data bar-by-bar: check whether the current bar closes out
     an open trade, build the BacktestState for 'now', let the strategy react
     if flat, then advance.
 
     This function is the only place that ever sees the full dataset;
     everything downstream (the strategy, via BacktestState) only sees what
-    it's explicitly allowed to.
+    it's explicitly allowed to -- *as long as* the strategy sticks to
+    BacktestState's properties (bars/current_bar/close/...) rather than
+    reaching into `full_data` directly, which is a plain public attribute
+    Python can't actually stop anyone from touching.
+
+    Every hand-written strategy in this codebase respects that boundary, so
+    the full DataFrame reference is normally handed over as-is: cheap (no
+    copy per bar) and safe, because we trust the code. `truncate_visible_data`
+    exists for the one case where that trust doesn't hold -- Phase 4's
+    AI-generated strategies (see ai/sandbox/runner.py) -- and closes the gap
+    by construction: with it on, `full_data` on each bar's state IS the
+    slice up through 'now', so there's no future data in memory at all for
+    an errant `state.full_data.iloc[...]` to reach, regardless of intent.
     """
     trade_manager = TradeManager(initial_equity=initial_equity)
 
@@ -33,8 +50,9 @@ def run_backtest(data: pd.DataFrame, strategy: Strategy, initial_equity: float =
 
         trade_manager.check_exit(bar_index=index, high=float(bar["High"]), low=float(bar["Low"]))
 
+        visible_data = data.iloc[: index + 1] if truncate_visible_data else data
         state = BacktestState(
-            full_data=data,
+            full_data=visible_data,
             current_index=index,
             equity=trade_manager.equity,
             position=trade_manager.position,

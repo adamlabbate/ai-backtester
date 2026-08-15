@@ -1,19 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
-import anthropic
-from dotenv import load_dotenv
-
+from .client import MODEL, get_client
 from .templates import TEMPLATES
-
-# Explicit path rather than relying on load_dotenv()'s stack-walking search --
-# this always resolves to backend/.env regardless of where the process is
-# launched from (project root vs backend/, directly vs under uvicorn --reload).
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-
-MODEL = "claude-sonnet-5"
 
 SYSTEM_PROMPT = (
     "You map a plain-English trading strategy description onto exactly one of the "
@@ -23,8 +13,6 @@ SYSTEM_PROMPT = (
     "template is long-only and defines risk as a percentage stop with a profit target "
     "expressed as a multiple of that risk (R)."
 )
-
-_client: anthropic.Anthropic | None = None
 
 
 class InterpretationError(RuntimeError):
@@ -42,13 +30,6 @@ class StrategyMatch:
     reasoning: str
 
 
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
-    return _client
-
-
 def interpret_strategy(description: str) -> StrategyMatch:
     """Ask Claude to pick one of TEMPLATES and fill in its parameters from a
     plain-English description.
@@ -64,7 +45,7 @@ def interpret_strategy(description: str) -> StrategyMatch:
         for template in TEMPLATES.values()
     ]
 
-    response = _get_client().messages.create(
+    response = get_client().messages.create(
         model=MODEL,
         max_tokens=1024,
         system=SYSTEM_PROMPT,

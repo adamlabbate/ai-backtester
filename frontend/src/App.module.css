@@ -48,6 +48,12 @@
 }
 
 .resultsMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.resultsMetaLine {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--color-text-faint);
@@ -55,6 +61,34 @@
 
 .resultsMetaParams {
   color: var(--color-text-faint);
+}
+
+.codeDisclosure {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.codeDisclosure summary {
+  color: var(--color-accent);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.codeDisclosure summary:hover {
+  text-decoration: underline;
+}
+
+.code {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-size: 12.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
 }
 
 .lowerGrid {

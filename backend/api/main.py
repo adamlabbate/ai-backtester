@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routes.backtest import router as backtest_router
 from .routes.chat import router as chat_router
+from .routes.codegen import router as codegen_router
 
 # FastAPI() is the application object -- everything (routes, middleware)
 # attaches to this one instance, and it's what an ASGI server like uvicorn
@@ -23,10 +24,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Every route defined in routes/backtest.py and routes/chat.py becomes
-# available under /api, so POST /backtest there is really POST /api/backtest.
+# Every route defined in routes/backtest.py, routes/chat.py, and
+# routes/codegen.py becomes available under /api, so POST /backtest there is
+# really POST /api/backtest.
 app.include_router(backtest_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(codegen_router, prefix="/api")
 
 
 @app.get("/health")

@@ -84,3 +84,39 @@ export interface InterpretResult {
   params: Record<string, number>;
   reasoning: string;
 }
+
+export interface GenerateStrategyParams {
+  description: string;
+  symbol: string;
+  start: string;
+  end: string;
+  interval: string;
+  initial_equity: number;
+}
+
+export interface GenerateStrategyResult {
+  symbol: string;
+  code: string;
+  attempts: number;
+  bars: Bar[];
+  trades: Trade[];
+  equity_curve: EquityPoint[];
+  metrics: Metrics;
+}
+
+// What the results section actually renders -- a template-based backtest
+// and a generated-code backtest produce the same bars/trades/equity_curve/
+// metrics shape, so both flow through one rendering path in App.tsx.
+// `source` is the one thing that differs: what actually produced this run.
+export type RunSource =
+  | { kind: "template"; template: string; params: Record<string, number> }
+  | { kind: "codegen"; code: string; attempts: number };
+
+export interface RunResult {
+  symbol: string;
+  bars: Bar[];
+  trades: Trade[];
+  equity_curve: EquityPoint[];
+  metrics: Metrics;
+  source: RunSource;
+}

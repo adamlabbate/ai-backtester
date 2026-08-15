@@ -1,4 +1,11 @@
-import type { BacktestParams, BacktestResult, InterpretResult, TemplateInfo } from "./types";
+import type {
+  BacktestParams,
+  BacktestResult,
+  GenerateStrategyParams,
+  GenerateStrategyResult,
+  InterpretResult,
+  TemplateInfo,
+} from "./types";
 
 // import.meta.env is Vite's mechanism for build-time config -- reads from
 // .env files or the shell environment, falls back to localhost for local
@@ -37,4 +44,8 @@ export async function fetchTemplates(): Promise<TemplateInfo[]> {
     throw new Error(`Failed to load strategy templates (status ${response.status})`);
   }
   return response.json();
+}
+
+export async function generateStrategy(params: GenerateStrategyParams): Promise<GenerateStrategyResult> {
+  return postJson<GenerateStrategyResult>("/api/generate-strategy", params);
 }
